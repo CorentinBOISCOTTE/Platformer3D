@@ -1,0 +1,75 @@
+#include "Texture.h"
+#include "stb_image.h"
+#include <tracy/Tracy.hpp>
+
+unsigned char* Texture::loadTexture(std::filesystem::path fileName, int& textureWidth, int& textureHeight) {
+    std::string outfilename_str = fileName.string();
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* textureData = stbi_load(outfilename_str.c_str(), &textureWidth, &textureHeight, &channels, 0);
+    if (!textureData) {
+        std::cout << "Erreur lors du chargement de la texture " << fileName << std::endl;
+        return nullptr;
+    }
+
+    return textureData;
+}
+
+void Texture::Load()
+{
+    ZoneScoped;
+    data = loadTexture(filename, width, height);
+}
+
+void Texture::Bind()
+{
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+}
+
+void Texture::Unbind()
+{
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Texture::Generate()
+{
+    glGenTextures(1, &texture);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+
+    switch (channels)
+    {
+    case 1:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R, width, height, 0, GL_R, GL_UNSIGNED_BYTE, data);
+        break;
+    case 2:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, width, height, 0, GL_RG, GL_UNSIGNED_BYTE, data);
+        break;
+    case 3:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        break;
+    case 4:
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        break;
+    }
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE0);
+}
+
+void Texture::Unload()
+{
+    glDeleteTextures(1, &texture);
+    stbi_image_free(this->data);
+}
+
+bool Texture::IsLoaded()
+{
+	return false;
+}
